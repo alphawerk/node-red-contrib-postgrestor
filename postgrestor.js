@@ -45,13 +45,17 @@ module.exports = function(RED) {
     node.userFieldType = n.userFieldType;
     node.password = n.password;
     node.passwordFieldType = n.passwordFieldType;
+    // below code allows for self signed ssl cert to work when ssl is enabled
+    let ssl = false;
+    if (getField(node, n.sslFieldType, n.ssl))
+      ssl = {rejectUnauthorized: false};
     this.pgPool = new Pool({
       user: getField(node, n.userFieldType, n.user),
       password: getField(node, n.passwordFieldType, n.password),
       host: getField(node, n.hostFieldType, n.host),
       port: getField(node, n.portFieldType, n.port),
       database: getField(node, n.databaseFieldType, n.database),
-      ssl: getField(node, n.sslFieldType, n.ssl),
+      ssl: ssl,
       max: getField(node, n.maxFieldType, n.max),
       min: getField(node, n.minFieldType, n.min),
       idleTimeoutMillis: getField(node, n.idleFieldType, n.iddle)
@@ -68,9 +72,16 @@ module.exports = function(RED) {
     node.topic = config.topic;
     node.config = RED.nodes.getNode(config.postgresDB);
     node.on('input', (msg) => {
-      const query = mustache.render(config.query, { msg });
+      //const query = mustache.render(config.query, { msg });
       //node.config.pgPool;
-       
+      // below code allows for query to be embedded with msg.topic rather than be hardcoded in the node itself
+      let tempquery = "";
+      if (msg.hasOwnProperty("topic") && msg.topic!=null) {
+        tempquery = mustache.render(msg.topic, {msg});
+      } else  {
+        tempquery = mustache.render(config.query, { msg });
+      }
+      const query = tempquery;
       const asyncQuery = async()=> {
         let client = false;
         try {
