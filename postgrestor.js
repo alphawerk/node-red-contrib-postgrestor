@@ -76,10 +76,12 @@ module.exports = function(RED) {
       //node.config.pgPool;
       // below code allows for query to be embedded with msg.topic rather than be hardcoded in the node itself
       let tempquery = "";
-      if (msg.hasOwnProperty("topic") && msg.topic!=null) {
+      if (config.query!=null && config.query!="") {
+        tempquery = mustache.render(config.query, { msg });
+      } else if (msg.hasOwnProperty("topic") && msg.topic!=null) {
         tempquery = mustache.render(msg.topic, {msg});
       } else  {
-        tempquery = mustache.render(config.query, { msg });
+        tempquery = "";
       }
       const query = tempquery;
       const asyncQuery = async()=> {
